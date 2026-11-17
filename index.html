@@ -59,16 +59,16 @@ body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#f3ead8;m
 <div class="ftip">套餐激励 = 套餐价值 × 0.5（仅发展渠道），如 139×0.5 = 69.5 元</div></div>
 <div class="cd"><div class="ct">② 提值金额</div>
 <div class="f"><label>提值金额（如 30）</label><input id="i_tz" value="30" inputmode="decimal" type="text">
-<div class="hint" id="i_tzhint">提值激励 = 提值金额 × 4（50元及以上×5），如 30×4 = 120 元</div></div></div>
-<div class="cd"><div class="ct">③ 智屏 / ④ FTTR（办理即叠加上激励）</div>
+<div class="hint" id="i_tzhint">提值激励 = 提值金额×倍数（0-24元×1、25-49元×4、50元及以上×5），如 30×4 = 120 元；提值20元及以上才计智屏/FTTR激励</div></div></div>
+<div class="cd"><div class="ct">③ 智屏 / ④ FTTR（提值≥20元才计激励）</div>
 <div class="r2">
 <div class="f"><button type="button" class="tog on" id="i_zp" onclick="toggle(this,'zp')">智屏<span>办理 +100 元</span></button></div>
 <div class="f"><button type="button" class="tog on" id="i_qg" onclick="toggle(this,'qg')">FTTR<span>办理 +50 元</span></button></div>
 </div></div>
 <div class="cd"><div class="ct">发展类型与名称</div>
 <div class="r2">
-<div class="f"><button type="button" class="tog on" id="i_gr" onclick="setGId('r')">发展人<span>提值49元内×4 · 50元及以上×5</span></button></div>
-<div class="f"><button type="button" class="tog" id="i_gc" onclick="setGId('c')">发展渠道<span>提值金额一律×5</span></button></div>
+<div class="f"><button type="button" class="tog on" id="i_gr" onclick="setGId('r')">发展人<span>提值0-24元×1 · 25-49元×4 · 50元及以上×5</span></button></div>
+<div class="f"><button type="button" class="tog" id="i_gc" onclick="setGId('c')">发展渠道<span>提值0-24元×1 · 25-49元×4 · 50元及以上×5</span></button></div>
 </div>
 <div class="f"><label id="i_gplab">发展人姓名（如：王强）</label><input id="i_cp" value="王强" maxlength="20" type="text"></div>
 <div class="hint">显示在海报名字框内；超长自动缩小字号</div></div>
@@ -116,9 +116,10 @@ function fmt(n){
 function calc(){
   var tc=gst.tier;
   var tz=parseFloat(document.getElementById('i_tz').value)||0;
-  var m=gst.id=='c'?5:(tz>=50?5:4);
-  var a=gst.id=='c'?tc*0.5:0,b=tz*m,c3=st.zp?100:0,c4=st.qg?50:0;
-  return {tc:tc,tz:tz,m:m,a:a,b:b,c3:c3,c4:c4,total:a+b+c3+c4};
+  var m=tz>=50?5:(tz>=25?4:1);
+  var ok=tz>=20;
+  var a=gst.id=='c'?tc*0.5:0,b=tz*m,c3=(st.zp&&ok)?100:0,c4=(st.qg&&ok)?50:0;
+  return {tc:tc,tz:tz,m:m,ok:ok,a:a,b:b,c3:c3,c4:c4,total:a+b+c3+c4};
 }
 /* ===== 积分收益模式 ===== */
 function calcJF(){
@@ -133,7 +134,7 @@ window.setGId=function(v){
   document.getElementById('i_gr').classList.toggle('on',v=='r');
   document.getElementById('i_gc').classList.toggle('on',v=='c');
   document.getElementById('i_gplab').textContent=v=='r'?'发展人姓名（如：王强）':'渠道名称（如：XX营业厅）';
-  document.getElementById('i_tzhint').textContent=v=='c'?'提值激励 = 提值金额 × 5，如 30×5 = 150 元':'提值激励 = 提值金额 × 4（50元及以上×5），如 30×4 = 120 元';
+  document.getElementById('i_tzhint').textContent='提值激励 = 提值金额×倍数（0-24元×1、25-49元×4、50元及以上×5），如 30×4 = 120 元；提值20元及以上才计智屏/FTTR激励';
   draw();
 };
 window.setId=function(v){
@@ -240,8 +241,8 @@ function drawG(g,d){
   var comps=[];
   if(gst.id=='c')comps.push('套餐激励');
   comps.push('提值激励');
-  if(st.zp)comps.push('智屏激励');
-  if(st.qg)comps.push('FTTR激励');
+  if(st.zp&&d.ok)comps.push('智屏激励');
+  if(st.qg&&d.ok)comps.push('FTTR激励');
   var fml='= '+comps.join(' + ');
   textC(fml,CX,L.t2.frm.y,fitFont(fml,rfnt(L.t2.frm.sz),520),L.t2.frm.c);
   /* 3. 激励明细面板 */
@@ -250,8 +251,8 @@ function drawG(g,d){
   var rows=[];
   if(gst.id=='c'){rows.push({l:'套餐激励',v:fmt(d.a),n:'套餐价值'+fmt(d.tc)+'×0.5'})}
   rows.push({l:'提值激励',v:fmt(d.b),n:'提值'+fmt(d.tz)+'元×'+fmt(d.m)});
-  if(st.zp){rows.push({l:'智屏激励',v:'100',n:'已办理智屏+100元'})}
-  if(st.qg){rows.push({l:'FTTR激励',v:'50',n:'已办理FTTR+50元'})}
+  if(st.zp&&d.ok){rows.push({l:'智屏激励',v:'100',n:'已办理智屏+100元'})}
+  if(st.qg&&d.ok){rows.push({l:'FTTR激励',v:'50',n:'已办理FTTR+50元'})}
   var pTotal=P.rh*rows.length+P.gap*(rows.length-1)+24;
   x.fillStyle=PAL.card;rr(P.x0,P.y0,P.x1-P.x0,pTotal,14);x.fill();
   x.strokeStyle=PAL.gold;x.lineWidth=2;rr(P.x0,P.y0,P.x1-P.x0,pTotal,14);x.stroke();
@@ -396,7 +397,7 @@ window.reset=function(){
   document.getElementById('i_gr').classList.add('on');
   document.getElementById('i_gc').classList.remove('on');
   document.getElementById('i_gplab').textContent='发展人姓名（如：王强）';
-  document.getElementById('i_tzhint').textContent='提值激励 = 提值金额 × 4（50元及以上×5），如 30×4 = 120 元';
+  document.getElementById('i_tzhint').textContent='提值激励 = 提值金额×倍数（0-24元×1、25-49元×4、50元及以上×5），如 30×4 = 120 元；提值20元及以上才计智屏/FTTR激励';
   document.getElementById('i_rr').classList.add('on');
   document.getElementById('i_rc').classList.remove('on');
   document.getElementById('i_ft').classList.add('on');
